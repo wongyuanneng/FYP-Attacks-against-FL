@@ -56,6 +56,7 @@ class Params:
     poisoning_proportion: float = 1.0  # backdoors proportion in backdoor loss
     synthesizer: str = 'pattern'
     backdoor_dynamic_position: bool = False
+    alpha: float = 1
 
     # losses to balance: `normal`, `backdoor`, `neural_cleanse`, `sentinet`,
     # `backdoor_multi`.

@@ -87,8 +87,8 @@ class Helper:
                 log.info('Folder already exists')
 
             with open('saved_models/runs.html', 'a') as f:
-                f.writelines([f'<div><a href="https://github.com/ebagdasa/'
-                              f'backdoors/tree/{self.params.commit}">GitHub'
+                f.writelines([f'<div><a href="https://github.com/wongyuanneng/'
+                              f'backdoors101/tree/{self.params.commit}">GitHub'
                               f'</a>, <span> <a href="http://gpu/'
                               f'{self.params.folder_path}">{self.params.name}_'
                               f'{self.params.current_time}</a></div>'])
@@ -102,8 +102,8 @@ class Helper:
 
             log.warning(f'Logging to: {self.params.folder_path}')
             log.error(
-                f'LINK: <a href="https://github.com/ebagdasa/backdoors/tree/'
-                f'{self.params.commit}">https://github.com/ebagdasa/backdoors'
+                f'LINK: <a href="https://github.com/wongyuanneng/backdoors101/tree/'
+                f'{self.params.commit}">https://github.com/wongyuanneng/backdoors101'
                 f'/tree/{self.params.commit}</a>')
 
             with open(f'{self.params.folder_path}/params.yaml.txt', 'w') as f:

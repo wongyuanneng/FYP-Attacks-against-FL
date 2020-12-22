@@ -15,6 +15,8 @@ from models.model import Model
 from tasks.batch import Batch
 from utils.parameters import Params
 
+import pysnooper
+
 logger = logging.getLogger('logger')
 
 
@@ -44,13 +46,13 @@ class Task:
 
     def init_task(self):
         self.load_data()
-        self.build_model()
+        self.model = self.build_model()
         self.resume_model()
         self.model = self.model.to(self.params.device)
 
-        self.optimizer = self.make_optimizer()
+        self.optimizer = self.make_optimizer(self.model)
         self.criterion = self.make_criterion()
-        self.test_metrics = [AccuracyMetric(), TestLossMetric(self.criterion)]
+        self.metrics = [AccuracyMetric(), TestLossMetric(self.criterion)]
         self.set_input_shape()
 
     def load_data(self) -> None:
@@ -67,6 +69,7 @@ class Task:
         """
         return nn.CrossEntropyLoss(reduction='none')
 
+    @pysnooper.snoop()
     def make_optimizer(self, model=None) -> Optimizer:
         if self.params.optimizer == 'SGD':
             optimizer = optim.SGD(model.parameters(),
@@ -122,7 +125,7 @@ class Task:
 
     def accumulate_metrics(self, outputs, labels):
         for metric in self.metrics:
-            metric.accumulate_on_batch(outputs, labels)
+            metric.accumulate_on_batch(outputs, labels) #assigns values to each metric
 
     def reset_metrics(self):
         for metric in self.metrics:
