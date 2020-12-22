@@ -1,0 +1,2 @@
+2020-12-22 03:21:25,428 - utils.utils - WARNING - Logging to: saved_models/model_MNIST_Dec.22_03.21.25_mnist
+2020-12-22 03:21:25,428 - utils.utils - ERROR - LINK: <a href="https://github.com/wongyuanneng/backdoors/tree/none">https://github.com/wongyuanneng/backdoors/tree/none</a>
