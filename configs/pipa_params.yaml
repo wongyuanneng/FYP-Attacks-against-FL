@@ -1,8 +1,8 @@
 task: Pipa
 synthesizer: Pattern
 
-batch_size: 64
-test_batch_size: 100
+batch_size: 16
+test_batch_size: 25
 lr: 0.1
 momentum: 0.9
 decay: 0.0005
@@ -20,11 +20,11 @@ scheduler: True
 
 #resumed_model: ../../bd_proj/smoothing/models/cifar10/resnet110/noise_0.25/checkpoint.pth.tar
 
-#resumed_model: model_image_Aug.31_17.16.10/model_last.pt.tar
+resumed_model: model_Pipa_Jan.11_00.57.03_pipatest1/model_last.pt.tar
 #resumed_model: model_image_Sep.11_14.56.21/model_last.pt.tar # backdoored
 #resumed_model: model_image_pipa_Mar.06_16.20.29/model_last.pt.tar
 
-data_path: /media/hdd/eugene/backdoors/data/pipa/
+data_path: C:\Users\Yuan Neng\OneDrive - Nanyang Technological University\Uni acad\FYP\Source code\backdoors101\.data\pipa_dataset
 
 poisoning_proportion: 1.1
 backdoor_label: 1
@@ -34,9 +34,9 @@ loss_balance: MGDA
 mgda_normalize: loss
 
 
-save_model: False
-log: False
-tb: False
+save_model: True
+log: True
+tb: True
 
 
 loss_tasks:
