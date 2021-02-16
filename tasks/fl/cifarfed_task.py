@@ -8,6 +8,8 @@ from torch.utils.data.sampler import SubsetRandomSampler
 from tasks.cifar10_task import Cifar10Task
 from tasks.fl.fl_task import FederatedLearningTask
 
+import logging
+logger = logging.getLogger('logger')
 
 class CifarFedTask(FederatedLearningTask, Cifar10Task):
 
@@ -18,7 +20,7 @@ class CifarFedTask(FederatedLearningTask, Cifar10Task):
             indices_per_participant = self.sample_dirichlet_train_data(
                 self.params.fl_total_participants,
                 alpha=self.params.fl_dirichlet_alpha)
-            train_loaders = [(pos, self.get_train(indices)) for pos, indices in
+            train_loaders = [self.get_train(indices) for pos, indices in
                              indices_per_participant.items()]
         else:
             # sample indices for participants that are equally

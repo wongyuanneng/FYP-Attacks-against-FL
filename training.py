@@ -17,7 +17,6 @@ logger = logging.getLogger('logger')
 def train(hlpr: Helper, epoch, model, optimizer, train_loader, attack=True):
     criterion = hlpr.task.criterion
     model.train()
-
     for i, data in enumerate(train_loader):
         batch = hlpr.task.get_batch(i, data)
         model.zero_grad()
@@ -97,6 +96,8 @@ def run_fl_round(hlpr, epoch):
             hlpr.attack.fl_scale_update(local_update)
         hlpr.task.accumulate_weights(weight_accumulator, local_update)
 
+    #input defences here to audit weight_accumulator; Server-based defences are more logical to be implemented here due to 1 user acting as up to 100 users.
+    
     hlpr.task.update_global_model(weight_accumulator, global_model)
 
 

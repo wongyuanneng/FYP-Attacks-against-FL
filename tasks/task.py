@@ -69,7 +69,6 @@ class Task:
         """
         return nn.CrossEntropyLoss(reduction='none')
 
-    @pysnooper.snoop()
     def make_optimizer(self, model=None) -> Optimizer:
         if self.params.optimizer == 'SGD':
             optimizer = optim.SGD(model.parameters(),

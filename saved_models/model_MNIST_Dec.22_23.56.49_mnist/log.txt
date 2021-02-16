@@ -1,2 +1,0 @@
-2020-12-22 23:56:49,608 - utils.utils - WARNING - Logging to: saved_models/model_MNIST_Dec.22_23.56.49_mnist
-2020-12-22 23:56:49,609 - utils.utils - ERROR - LINK: <a href="https://github.com/wongyuanneng/backdoors101/tree/master/saved_models">https://github.com/wongyuanneng/backdoors101/tree/master/saved_models</a>
