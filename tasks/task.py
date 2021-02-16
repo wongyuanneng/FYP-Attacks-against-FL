@@ -11,7 +11,6 @@ from torchvision.transforms import transforms
 from metrics.accuracy_metric import AccuracyMetric
 from metrics.metric import Metric
 from metrics.test_loss_metric import TestLossMetric
-from models.model import Model
 from tasks.batch import Batch
 from utils.parameters import Params
 
@@ -29,9 +28,9 @@ class Task:
     test_loader = None
     classes = None
 
-    model: Model = None
+    model: Module = None
     optimizer: optim.Optimizer = None
-    criterion: nn.Module = None
+    criterion: Module = None
     scheduler: MultiStepLR = None
     metrics: List[Metric] = None
 
@@ -58,7 +57,7 @@ class Task:
     def load_data(self) -> None:
         raise NotImplemented
 
-    def build_model(self) -> Model:
+    def build_model(self) -> Module:
         raise NotImplemented
 
     def make_criterion(self) -> Module:
@@ -70,6 +69,8 @@ class Task:
         return nn.CrossEntropyLoss(reduction='none')
 
     def make_optimizer(self, model=None) -> Optimizer:
+        if model is None:
+            model = self.model
         if self.params.optimizer == 'SGD':
             optimizer = optim.SGD(model.parameters(),
                                   lr=self.params.lr,

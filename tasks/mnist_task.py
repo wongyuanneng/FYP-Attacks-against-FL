@@ -1,6 +1,5 @@
 import torchvision
 import torch.utils.data as torch_data
-from torch.nn import CrossEntropyLoss
 
 from models.simple import SimpleNet
 from tasks.task import Task
