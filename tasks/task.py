@@ -119,7 +119,7 @@ class Task:
         :param data: object returned by the Loader.
         :return:
         """
-        inputs, labels = data
+        inputs, labels = data	#data = self.get_train(indices)
         batch = Batch(batch_id, inputs, labels)
         return batch.to(self.params.device)
 

@@ -45,7 +45,7 @@ class FederatedLearningTask(Task):
             self.params.fl_no_models)
         sampled_users = []
         for pos, user_id in enumerate(sampled_ids):
-            train_loader = self.fl_train_loaders[user_id]
+            train_loader = self.fl_train_loaders[user_id]	#train_loader = (pos, self.get_train(indices))
             compromised = self.check_user_compromised(epoch, pos, user_id)
             user = FLUser(user_id, compromised=compromised,
                           train_loader=train_loader)

@@ -17,8 +17,8 @@ logger = logging.getLogger('logger')
 def train(hlpr: Helper, epoch, model, optimizer, train_loader, attack=True):
     criterion = hlpr.task.criterion
     model.train()
-    for i, data in enumerate(train_loader):
-        batch = hlpr.task.get_batch(i, data)
+    for i, data in enumerate(train_loader):	#train_loader = (pos, self.get_train(indices))
+        batch = hlpr.task.get_batch(i, data)	#i=pos, data = self.get_train(indices)
         model.zero_grad()
         loss = hlpr.attack.compute_blind_loss(model, criterion, batch, attack)
         loss.backward()
@@ -79,10 +79,10 @@ def run_fl_round(hlpr, epoch):
     local_model = hlpr.task.local_model
 
     round_participants = hlpr.task.sample_users_for_round(epoch)
-    weight_accumulator = hlpr.task.get_empty_accumulator()
+    weight_accumulator = hlpr.task.get_empty_accumulator()	#initialise the accumulator
 
     for user in tqdm(round_participants):
-        hlpr.task.copy_params(global_model, local_model)
+        hlpr.task.copy_params(global_model, local_model)	#all local_models will start off with global_model of previous iteration.
         optimizer = hlpr.task.make_optimizer(local_model)
         for local_epoch in range(hlpr.params.fl_local_epochs):
             if user.compromised:
@@ -91,14 +91,14 @@ def run_fl_round(hlpr, epoch):
             else:
                 train(hlpr, local_epoch, local_model, optimizer,
                       user.train_loader, attack=False)
-        local_update = hlpr.task.get_fl_update(local_model, global_model)
+        local_update = hlpr.task.get_fl_update(local_model, global_model)	#local_update for this user for this iteration is obtained.
         if user.compromised:
-            hlpr.attack.fl_scale_update(local_update)
-        hlpr.task.accumulate_weights(weight_accumulator, local_update)
+            hlpr.attack.fl_scale_update(local_update)		#backdoor scaling
+        hlpr.task.accumulate_weights(weight_accumulator, local_update)	#local_update is appended to the weight_accumulator - ie. weight_accumulator is a dict of all local updates for EACH iteration.
 
     #input defences here to audit weight_accumulator; Server-based defences are more logical to be implemented here due to 1 user acting as up to 100 users.
     
-    hlpr.task.update_global_model(weight_accumulator, global_model)
+    hlpr.task.update_global_model(weight_accumulator, global_model)	#fedavging the list of local_updates into global_model.
 
 
 if __name__ == '__main__':

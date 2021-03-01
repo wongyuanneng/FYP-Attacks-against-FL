@@ -54,7 +54,7 @@ class Helper:
             module_name = f'tasks.{name_lower}_task'
             path = f'tasks/{name_lower}_task.py'
         try:
-            task_module = importlib.import_module(module_name)
+            task_module = importlib.import_module(module_name) #imports cifarfed_task.py
             task_class = getattr(task_module, f'{name_cap}Task')
         except (ModuleNotFoundError, AttributeError):
             raise ModuleNotFoundError(f'Your task: {self.params.task} should '

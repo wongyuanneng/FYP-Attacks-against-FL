@@ -56,7 +56,6 @@ class Params:
     poisoning_proportion: float = 1.0  # backdoors proportion in backdoor loss
     synthesizer: str = 'pattern'
     backdoor_dynamic_position: bool = False
-    alpha: float = 1
 
     # losses to balance: `normal`, `backdoor`, `neural_cleanse`, `sentinet`,
     # `backdoor_multi`.
@@ -101,18 +100,18 @@ class Params:
 
     # FL params
     fl: bool = False
-    fl_no_models: int = 100
-    fl_local_epochs: int = 2
+    fl_no_models: int = 100                                         #number of participants to choose from number of total participants
+    fl_local_epochs: int = 2                                        #number of epoch for LOCAL model.
     fl_total_participants: int = 80000
-    fl_eta: int = 1
-    fl_sample_dirichlet: bool = False
-    fl_dirichlet_alpha: float = None
-    fl_diff_privacy: bool = False
-    fl_dp_clip: float = None
-    fl_dp_noise: float = None
+    fl_eta: int = 1                                                 #global model learning rate
+    fl_sample_dirichlet: bool = False                               #dirichlet distribution (iid related concept)
+    fl_dirichlet_alpha: float = None                                #parameter alpha of dirichlet distribution (iid related concept)
+    fl_diff_privacy: bool = False                                   #differential privacy
+    fl_dp_clip: float = None                                        #differential privacy
+    fl_dp_noise: float = None                                       #differential privacy
     # FL attack details. Set no adversaries to perform the attack:
-    fl_number_of_adversaries: int = 0
-    fl_single_epoch_attack: int = None
+    fl_number_of_adversaries: int = 0                               #set to 0 to disable attack
+    fl_single_epoch_attack: int = None                              #specifies which epoch to perform the single-attack
     fl_weight_scale: int = 1
 
     def __post_init__(self):
