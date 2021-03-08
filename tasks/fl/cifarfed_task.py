@@ -80,7 +80,7 @@ class CifarFedTask(FederatedLearningTask, Cifar10Task):
         train_loader = DataLoader(self.train_dataset,
                                   batch_size=self.params.batch_size,
                                   sampler=SubsetRandomSampler(
-                                      indices))
+                                      indices), drop_last=True)
         return train_loader
 
     def get_train_old(self, all_range, model_no):
