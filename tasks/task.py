@@ -139,7 +139,7 @@ class Task:
             metric.plot(tb_writer, step, tb_prefix=tb_prefix)
         logger.warning(f'{prefix} {step:4d}. {" | ".join(metric_text)}')
 
-        return  self.metrics[0].get_main_metric_value()
+        return self.metrics[0].get_main_metric_value()
 
     @staticmethod
     def get_batch_accuracy(outputs, labels, top_k=(1,)):

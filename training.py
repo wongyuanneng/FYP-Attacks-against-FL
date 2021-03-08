@@ -50,7 +50,6 @@ def test(hlpr: Helper, epoch, backdoor=False):
                              prefix=f'Backdoor {str(backdoor):5s}. Epoch: ',
                              tb_writer=hlpr.tb_writer,
                              tb_prefix=f'Test_backdoor_{str(backdoor):5s}')
-
     return metric
 
 

@@ -52,7 +52,7 @@ class FederatedLearningTask(Task):
             sampled_users.append(user)
 
         return sampled_users
-
+    
     def check_user_compromised(self, epoch, pos, user_id):
         """Check if the sampled user is compromised for the attack.
 
@@ -62,9 +62,15 @@ class FederatedLearningTask(Task):
         :param user_id:
         :return:
         """
+        accuracy_threshold = 90
         compromised = False
         if self.params.fl_single_epoch_attack is not None:
-            if epoch == self.params.fl_single_epoch_attack:
+            if (self.params.fl_single_epoch_attack == 0):
+                if (self.metrics[0].get_value() == {} or self.metrics[0].get_main_metric_value() < accuracy_threshold):     #auto_attack when below % accuracy
+                    compromised = user_id in self.adversaries
+                else:
+                    logger.warning(f'Skipping attack once at epoch {epoch} as accuracy is higher than {accuracy_threshold}')
+            elif (epoch == self.params.fl_single_epoch_attack):
                 if pos < self.params.fl_number_of_adversaries:
                     compromised = True
                     logger.warning(f'Attacking once at epoch {epoch}. Compromised'
@@ -82,6 +88,12 @@ class FederatedLearningTask(Task):
                 range(self.params.fl_total_participants),
                 self.params.fl_number_of_adversaries)
             logger.warning(f'Attacking over multiple epochs with following '
+                           f'users compromised: {adversaries_ids}.')
+        elif self.params.fl_single_epoch_attack==0:
+            adversaries_ids = random.sample(
+                range(self.params.fl_total_participants),
+                self.params.fl_number_of_adversaries)
+            logger.warning(f'Attacking discontinuously over multiple epochs with following '
                            f'users compromised: {adversaries_ids}.')
         else:
             logger.warning(f'Attack only on epoch: '
