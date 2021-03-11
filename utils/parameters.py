@@ -114,6 +114,9 @@ class Params:
     fl_single_epoch_attack: int = None                              #specifies which epoch to perform the single-attack
     fl_weight_scale: int = 1
 
+    # FL defence details: `pdgan`, `??`, ...
+    fl_pdgan: int = 0                                               #0 to deactivate pdgan, otherwise d_iter = fl_pdgan
+
     def __post_init__(self):
         # enable logging anyways when saving statistics
         if self.save_model or self.tb or self.save_timing or \

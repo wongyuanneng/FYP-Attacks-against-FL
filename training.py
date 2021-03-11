@@ -11,6 +11,8 @@ from dataset.pipa import Annotations  # legacy to correctly load dataset.
 from helper import Helper
 from utils.utils import *
 
+from defences.pdgan import PDGAN
+
 logger = logging.getLogger('logger')
 
 
@@ -78,9 +80,10 @@ def run_fl_round(hlpr, epoch):
     local_model = hlpr.task.local_model
 
     round_participants = hlpr.task.sample_users_for_round(epoch)
-    weight_accumulator = hlpr.task.get_empty_accumulator()	#initialise the accumulator
 
-    for user in tqdm(round_participants):
+    server = round_participants[0]
+    local_update_list = []
+    for user in tqdm(round_participants[1:]):
         hlpr.task.copy_params(global_model, local_model)	#all local_models will start off with global_model of previous iteration.
         optimizer = hlpr.task.make_optimizer(local_model)
         for local_epoch in range(hlpr.params.fl_local_epochs):
@@ -93,10 +96,19 @@ def run_fl_round(hlpr, epoch):
         local_update = hlpr.task.get_fl_update(local_model, global_model)	#local_update for this user for this iteration is obtained.
         if user.compromised:
             hlpr.attack.fl_scale_update(local_update)		#backdoor scaling
+        
+        local_update_list.append(local_update)
+        #hlpr.task.accumulate_weights(weight_accumulator, local_update)	#local_update is appended to the weight_accumulator - ie. weight_accumulator is a dict of all local updates for EACH iteration.
+
+    
+    #input defences here to audit weight_accumulator; Server-based defences are more logical to be implemented here due to 1 user acting as up to 100 users.
+    pdgan_utility = PDGAN()
+    benign_update_list = pdgan_utility.run_defence(hlpr, server.train_loader, global_model, local_update_list, epoch)
+
+    weight_accumulator = hlpr.task.get_empty_accumulator()	#initialise the accumulator
+    for local_update in benign_update_list:
         hlpr.task.accumulate_weights(weight_accumulator, local_update)	#local_update is appended to the weight_accumulator - ie. weight_accumulator is a dict of all local updates for EACH iteration.
 
-    #input defences here to audit weight_accumulator; Server-based defences are more logical to be implemented here due to 1 user acting as up to 100 users.
-    
     hlpr.task.update_global_model(weight_accumulator, global_model)	#fedavging the list of local_updates into global_model.
 
 

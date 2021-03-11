@@ -41,9 +41,13 @@ class FederatedLearningTask(Task):
 
     def sample_users_for_round(self, epoch) -> List[FLUser]:
         sampled_ids = random.sample(
-            range(self.params.fl_total_participants),
+            range(1,self.params.fl_total_participants),
             self.params.fl_no_models)
         sampled_users = []
+        
+        #create server
+        sampled_users.append(FLUser(0, compromised=False, train_loader=self.fl_train_loaders[0]))
+        
         for pos, user_id in enumerate(sampled_ids):
             train_loader = self.fl_train_loaders[user_id]	#train_loader = (pos, self.get_train(indices))
             compromised = self.check_user_compromised(epoch, pos, user_id)
@@ -71,7 +75,7 @@ class FederatedLearningTask(Task):
                 else:
                     logger.warning(f'Skipping attack once at epoch {epoch} as accuracy is higher than {accuracy_threshold}')
             elif (epoch == self.params.fl_single_epoch_attack):
-                if pos < self.params.fl_number_of_adversaries:
+                if pos <= self.params.fl_number_of_adversaries: # <= because 0 is not inside bc it is the server.
                     compromised = True
                     logger.warning(f'Attacking once at epoch {epoch}. Compromised'
                                    f' user: {user_id}.')
@@ -85,13 +89,13 @@ class FederatedLearningTask(Task):
             logger.warning(f'Running vanilla FL, no attack.')
         elif self.params.fl_single_epoch_attack is None:
             adversaries_ids = random.sample(
-                range(self.params.fl_total_participants),
+                range(1,self.params.fl_total_participants),
                 self.params.fl_number_of_adversaries)
             logger.warning(f'Attacking over multiple epochs with following '
                            f'users compromised: {adversaries_ids}.')
         elif self.params.fl_single_epoch_attack==0:
             adversaries_ids = random.sample(
-                range(self.params.fl_total_participants),
+                range(1,self.params.fl_total_participants),
                 self.params.fl_number_of_adversaries)
             logger.warning(f'Attacking discontinuously over multiple epochs with following '
                            f'users compromised: {adversaries_ids}.')
@@ -135,7 +139,7 @@ class FederatedLearningTask(Task):
         for name, sum_update in weight_accumulator.items():
             if self.check_ignored_weights(name):
                 continue
-            scale = self.params.fl_eta / self.params.fl_total_participants
+            scale = self.params.fl_eta / (self.params.fl_total_participants - 1)
             average_update = scale * sum_update
             self.dp_add_noise(average_update)
             model_weight = global_model.state_dict()[name]

@@ -14,7 +14,7 @@ logger = logging.getLogger('logger')
 class CifarFedTask(FederatedLearningTask, Cifar10Task):
 
     def load_data(self) -> None:
-        self.load_cifar_data()
+        self.load_cifar_data()      # loads data to self.train_dataset self.train_loader self.test_dataset self.test_loader
         if self.params.fl_sample_dirichlet:
             # sample indices for participants using Dirichlet distribution
             indices_per_participant = self.sample_dirichlet_train_data(
