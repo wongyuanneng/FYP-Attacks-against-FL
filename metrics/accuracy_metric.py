@@ -1,6 +1,7 @@
 import torch
 from metrics.metric import Metric
-
+import logging
+logger = logging.getLogger('logger')
 
 class AccuracyMetric(Metric):
 
@@ -18,7 +19,7 @@ class AccuracyMetric(Metric):
         _, pred = outputs.topk(max_k, 1, True, True)
         pred = pred.t()
         correct = pred.eq(labels.view(1, -1).expand_as(pred))
-
+        
         res = dict()
         for k in self.top_k:
             correct_k = correct[:k].view(-1).float().sum(0)

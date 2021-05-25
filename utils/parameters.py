@@ -115,7 +115,8 @@ class Params:
     fl_weight_scale: int = 1
 
     # FL defence details: `pdgan`, `??`, ...
-    fl_pdgan: int = 0                                               #0 to deactivate pdgan, otherwise d_iter = fl_pdgan
+    fl_pdgan: int = 0                                               #0 to deactivate pdgan, otherwise d_iter = fl_pdgan where d_iter is the round to activate pdgan
+    fl_accuracy_threshold: int = 90
 
     def __post_init__(self):
         # enable logging anyways when saving statistics

@@ -5,7 +5,8 @@ from typing import List, Any, Dict
 
 from metrics.accuracy_metric import AccuracyMetric
 from metrics.test_loss_metric import TestLossMetric
-from tasks.fl.fl_user import FLUser
+from tasks.fl.fl_user import FLUser, FLServer
+from defences.pdgan import PDGAN
 import torch
 import logging
 from torch.nn import Module
@@ -46,8 +47,8 @@ class FederatedLearningTask(Task):
         sampled_users = []
         
         #create server
-        sampled_users.append(FLUser(0, compromised=False, train_loader=self.fl_train_loaders[0]))
-        
+        sampled_users.append(FLServer(0, compromised=False, train_loader=self.fl_train_loaders[0], defence_utility=PDGAN()))
+
         for pos, user_id in enumerate(sampled_ids):
             train_loader = self.fl_train_loaders[user_id]	#train_loader = (pos, self.get_train(indices))
             compromised = self.check_user_compromised(epoch, pos, user_id)
