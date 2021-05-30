@@ -11,6 +11,7 @@ from torchvision.utils import save_image
 
 from torch.utils.data import DataLoader
 from torchvision import datasets
+import torchvision.utils as vutils
 from torch.autograd import Variable
 
 import torch.nn as nn
@@ -64,62 +65,64 @@ class PDGAN():
             g = Generator(100, 64, .2, 3,True)
             g.apply(self.weights_init)
             self.generator = g.cuda()
-
-        x_fake = self.generate_fake()
         
         # update discriminator
         updated_global_model = copy.deepcopy(global_model)
-        self.discriminator = Discriminator(updated_global_model, ndf=64, num_classes=10).cuda()
+        self.discriminator = Discriminator(updated_global_model, num_classes=10).cuda()
 
+        #train generator and discriminator
         self.train(aux_loader, batch_size, round_no, lr)
-       
+        
         if round_no > hlpr.params.fl_pdgan:
             ##Perform accuracy auditing
-            outputs = []
-            for k in range(len(participant_updates)):
-                #initialise participant classification model
-                updated_global_model_k = copy.deepcopy(global_model)
-                weight_accumulator = hlpr.task.get_empty_accumulator()
-                hlpr.task.accumulate_weights(weight_accumulator, participant_updates[k]['update'])
-                hlpr.task.update_global_model(weight_accumulator, updated_global_model_k)
-                
-                output_list = []
-                with torch.no_grad():
-                    #Assign labels for x_fake based on L
-                    for i, data in enumerate(aux_loader):
-                        batch = hlpr.task.get_batch(i, data)
-                        out = updated_global_model_k(batch.inputs)
-                        _, pred = out.topk(1, 1, True, True)
-                        output_list.append(pred)
-                output_k = torch.cat(output_list,0)
-                outputs.append(output_k)
-            
-            outputs_tensor = torch.stack(outputs,0)
-            labels = torch.mode(outputs_tensor,0).values
-            
-            #Calculate accuracy a of each participant classification model on x_fake
-            mean_accuracy = 0 #-10% of average accuracy
             accuracy_list = []
             for k in range(len(participant_updates)):
-                metric = self.compute_acc(preds=outputs_tensor[k],labels=labels)
-                accuracy_list.append(metric)
-                mean_accuracy += metric
-                logger.warning(f"x_fake for participant {k}. Compromised: {participant_updates[k]['user'].compromised}. Epoch: {round_no}. Accuracy: {metric}")
+                pdgan_hlpr_task = copy.deepcopy(hlpr.task)
+                acc_list_k = []
+                loss_list_k = []
 
-            mean_accuracy = mean_accuracy/len(participant_updates)
+                #generate then load fake
+                xfake = []
+                for i in range(100):
+                    fake = self.generate_fake()
+                    vutils.save_image(fake.data, '{}/fake_samples_epoch_{:03d}.png'.format("./images", round_no), normalize=True)
+                    xfake.append(fake)
+                #xfake_loader = DataLoader((x_fake,global_model(x_fake)), batch_size=hlpr.params.batch_size, shuffle=True, num_workers=0)
+            
+                #initialise participant classification model
+                updated_global_model_k = copy.deepcopy(global_model)
+                weight_accumulator = pdgan_hlpr_task.get_empty_accumulator()
+                pdgan_hlpr_task.accumulate_weights(weight_accumulator, participant_updates[k]['update'])
+                pdgan_hlpr_task.update_global_model(weight_accumulator, updated_global_model_k)
+                
+                with torch.no_grad():
+                    #Assign labels for x_fake based on L
+                    for x_fake in xfake:
+                        outputs = updated_global_model_k(x_fake)
+                        _, labels = global_model(x_fake).topk(1, 1, True, True)
+                        pdgan_hlpr_task.accumulate_metrics(outputs=outputs, labels=torch.squeeze(labels))
+                        accuracy = pdgan_hlpr_task.metrics[0].get_main_metric_value()
+                        loss = pdgan_hlpr_task.metrics[1].get_main_metric_value()
+                        #logger.warning(f"Accuracy: {accuracy} | Loss: {loss}")
+                        acc_list_k.append(accuracy)
+                        loss_list_k.append(loss)
+                mean_acc = sum(acc_list_k)/len(acc_list_k)
+                mean_loss = sum(loss_list_k)/len(loss_list_k)
+                logger.warning(f"PDGAN. Participant {k}. Compromised {participant_updates[k]['user'].compromised}. Epoch: {round_no}. Accuracy: {mean_acc} | Loss: {mean_loss}")
+                accuracy_list.append(mean_acc)
+            
+            #Calculate accuracy a of each participant classification model on x_fake
+            mean_accuracy = sum(accuracy_list)/len(accuracy_list)
             accuracy_threshold = hlpr.params.fl_accuracy_threshold/100.0
-            accuracy_low_threshold = (1.0-accuracy_threshold)*mean_accuracy
-            accuracy_high_threshold = (1.0+accuracy_threshold)*mean_accuracy
-            logger.warning(f"Epoch: {round_no}. Accuracy threshold: {accuracy_low_threshold}, {mean_accuracy}, {accuracy_high_threshold}")
             correct_purges = 0
             for k in range(len(accuracy_list)):
-                if (accuracy_list[k] >= accuracy_low_threshold):# and metric <= accuracy_high_threshold):
+                if (accuracy_list[k] >= (1.0-accuracy_threshold)*mean_accuracy): #accuracy_low_threshold):# and metric <= accuracy_high_threshold):
                     benign_update_list.append(participant_updates[k])
                 else:
                     malicious_update_list.append(participant_updates[k])
                     if participant_updates[k]['user'].compromised:
                         correct_purges +=1
-            logger.warning(f"Number of correct participants purged: {correct_purges}/{len(malicious_update_list)}")
+            logger.warning(f"Number of correct participants purged: {correct_purges}/{len(malicious_update_list)}.")
             return benign_update_list
         else:
             return participant_updates
@@ -187,10 +190,16 @@ class PDGAN():
             d_optimizer.zero_grad()
             g_optimizer.zero_grad()
 
+            # train with fake images
+            # noise = torch.FloatTensor(64, 100, 1, 1).normal_(0, 1)
+            # noise_var = _to_var(noise)
+            # fake = helper.g_model(noise_var)
+
             '''
             Now we train the generator as we have finished updating weights of the discriminator
             '''
             _, _, g_gan_logits = self.discriminator(fake)
+
             g_loss = -torch.mean(g_gan_logits)
             gloss_sum += g_loss
             gloss_num += 1
@@ -198,4 +207,3 @@ class PDGAN():
             g_optimizer.step()
 
             logger.warning(f"***GAN training***: Epoch: [{round_no}]. Loss_Discriminator--[{dloss_sum / dloss_num}]. Loss_Generator--[{gloss_sum / gloss_num}].")
-            
