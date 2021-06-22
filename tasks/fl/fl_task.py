@@ -5,8 +5,7 @@ from typing import List, Any, Dict
 
 from metrics.accuracy_metric import AccuracyMetric
 from metrics.test_loss_metric import TestLossMetric
-from tasks.fl.fl_user import FLUser, FLServer
-from defences.pdgan import PDGAN
+from tasks.fl.fl_user import FLUser
 import torch
 import logging
 from torch.nn import Module
@@ -29,6 +28,7 @@ class FederatedLearningTask(Task):
         self.local_model = self.build_model().to(self.params.device)
         self.criterion = self.make_criterion()
         self.adversaries = self.sample_adversaries()
+        self.server = None
 
         self.metrics = [AccuracyMetric(), TestLossMetric(self.criterion)]
         self.set_input_shape()
@@ -42,12 +42,9 @@ class FederatedLearningTask(Task):
 
     def sample_users_for_round(self, epoch) -> List[FLUser]:
         sampled_ids = random.sample(
-            range(1,self.params.fl_total_participants),
+            range(self.params.fl_total_participants),
             self.params.fl_no_models)
         sampled_users = []
-        
-        #create server
-        sampled_users.append(FLServer(0, compromised=False, train_loader=self.fl_train_loaders[0], defence_utility=PDGAN()))
 
         for pos, user_id in enumerate(sampled_ids):
             train_loader = self.fl_train_loaders[user_id]	#train_loader = (pos, self.get_train(indices))
@@ -76,7 +73,7 @@ class FederatedLearningTask(Task):
                 else:
                     logger.warning(f'Skipping attack once at epoch {epoch} as accuracy is higher than {accuracy_threshold}')
             elif (epoch == self.params.fl_single_epoch_attack):
-                if pos <= self.params.fl_number_of_adversaries: # <= because 0 is not inside bc it is the server.
+                if pos < self.params.fl_number_of_adversaries:
                     compromised = True
                     logger.warning(f'Attacking once at epoch {epoch}. Compromised'
                                    f' user: {user_id}.')
@@ -90,7 +87,7 @@ class FederatedLearningTask(Task):
             logger.warning(f'Running vanilla FL, no attack.')
         elif self.params.fl_single_epoch_attack is None:
             adversaries_ids = random.sample(
-                range(1,self.params.fl_total_participants),
+                range(self.params.fl_total_participants),
                 self.params.fl_number_of_adversaries)
             logger.warning(f'Attacking over multiple epochs with following '
                            f'users compromised: {adversaries_ids}.')

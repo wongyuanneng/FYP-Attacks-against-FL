@@ -14,7 +14,7 @@ from metrics.test_loss_metric import TestLossMetric
 from tasks.batch import Batch
 from utils.parameters import Params
 
-import pysnooper
+# import pysnooper
 
 logger = logging.getLogger('logger')
 
@@ -96,7 +96,7 @@ class Task:
         if self.params.resume_model:
             logger.info(f'Resuming training from {self.params.resume_model}')
             loaded_params = torch.load(f"saved_models/"
-                                       f"{self.params.resume_model}",
+                                       f"{self.params.resume_model}/model_last.pt.tar",
                                     map_location=torch.device('cpu'))
             self.model.load_state_dict(loaded_params['state_dict'])
             self.params.start_epoch = loaded_params['epoch']

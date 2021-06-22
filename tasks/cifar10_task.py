@@ -3,7 +3,9 @@ from torch import nn
 from torch.utils.data import DataLoader
 from torch.utils.data.sampler import SubsetRandomSampler
 from torchvision.transforms import transforms
+from torchvision.transforms.functional import center_crop
 
+from models.gan import Discriminator
 from models.resnet import resnet18
 from tasks.task import Task
 
@@ -57,7 +59,7 @@ class Cifar10Task(Task):
                         'deer', 'dog', 'frog', 'horse', 'ship', 'truck')
         return True
 
-    def build_model(self) -> None:
+    def build_model(self) -> nn.Module:
         if self.params.pretrained:
             model = resnet18(pretrained=True)
             model.fc = nn.Linear(512, len(self.classes))
@@ -65,6 +67,7 @@ class Cifar10Task(Task):
             model = resnet18(pretrained=False,
                                   num_classes=len(self.classes))
         return model
+        # return Discriminator()
 
     def remove_semantic_backdoors(self):
         """
@@ -78,7 +81,7 @@ class Cifar10Task(Task):
         unpoisoned_images = list(all_images.difference(set(
             self.params.poison_images)))
 
-        self.train_loader = DataLoader(self.train_dataset,
+        return DataLoader(self.train_dataset,
                                        batch_size=self.params.batch_size,
                                        sampler=SubsetRandomSampler(
                                            unpoisoned_images))

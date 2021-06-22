@@ -1,4 +1,5 @@
 import argparse
+from defences.defences import PDGANServer
 import shutil
 from datetime import datetime
 
@@ -11,12 +12,14 @@ from dataset.pipa import Annotations  # legacy to correctly load dataset.
 from helper import Helper
 
 from utils.utils import *
+#import torchvision.utils as vutils
+#vutils.save_image(batch.inputs, '{}/real_samples_epoch_{:03d}.png'.format("./images", epoch), normalize=True)
 
-#from defences.pdgan import PDGAN
+from defences.defences import PDGANServer
 
 logger = logging.getLogger('logger')
 
-def train(hlpr: Helper, epoch, model, optimizer, train_loader, attack=True):
+def train(hlpr, epoch, model, optimizer, train_loader, attack=True):
     criterion = hlpr.task.criterion
     model.train()
     for i, data in enumerate(train_loader):	#train_loader = (pos, self.get_train(indices))
@@ -33,7 +36,7 @@ def train(hlpr: Helper, epoch, model, optimizer, train_loader, attack=True):
     return
 
 
-def test(hlpr: Helper, epoch, backdoor=False):
+def test(hlpr, epoch, backdoor=False):
     model = hlpr.task.model
     model.eval()
     hlpr.task.reset_metrics()
@@ -45,7 +48,6 @@ def test(hlpr: Helper, epoch, backdoor=False):
                 batch = hlpr.attack.synthesizer.make_backdoor_batch(batch,
                                                                     test=True,
                                                                     attack=True)
-
             outputs = model(batch.inputs)
             hlpr.task.accumulate_metrics(outputs=outputs, labels=batch.labels)
     metric = hlpr.task.report_metrics(epoch,
@@ -65,23 +67,22 @@ def run(hlpr):
         hlpr.save_model(hlpr.task.model, epoch, acc)
 
 
-def fl_run(hlpr: Helper):
+def fl_run(hlpr):
+    server = PDGANServer(hlpr=hlpr)
     for epoch in range(hlpr.params.start_epoch,
                        hlpr.params.epochs + 1):
-        run_fl_round(hlpr, epoch)
+        run_fl_round(hlpr, epoch, server)
         metric = test(hlpr, epoch, backdoor=False)
         test(hlpr, epoch, backdoor=True)
 
         hlpr.save_model(hlpr.task.model, epoch, metric)
 
 
-def run_fl_round(hlpr, epoch):
+def run_fl_round(hlpr, epoch, server):
     global_model = hlpr.task.model
     local_model = hlpr.task.local_model
 
     round_participants = hlpr.task.sample_users_for_round(epoch)
-
-    server = round_participants.pop(0)
 
     local_update_list = []
     for user in tqdm(round_participants):
@@ -102,7 +103,7 @@ def run_fl_round(hlpr, epoch):
         #hlpr.task.accumulate_weights(weight_accumulator, local_update)	#local_update is appended to the weight_accumulator - ie. weight_accumulator is a dict of all local updates for EACH iteration.
     
     #input defences here to audit weight_accumulator; Server-based defences are more logical to be implemented here due to 1 user acting as up to 100 users.
-    benign_update_list = server.defence_utility.run_defence(hlpr, server.train_loader, global_model, local_update_list, epoch)
+    benign_update_list = server.defend(hlpr, global_model, local_update_list, epoch)
 
     weight_accumulator = hlpr.task.get_empty_accumulator()	#initialise the accumulator
     for local_update in benign_update_list:

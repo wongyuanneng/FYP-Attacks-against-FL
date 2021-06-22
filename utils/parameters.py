@@ -28,6 +28,7 @@ class Params:
     # model arch is usually defined by the task
     pretrained: bool = False
     resume_model: str = None
+    resume_gan_model: str = None
     lr: float = None
     decay: float = None
     momentum: float = None

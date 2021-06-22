@@ -117,7 +117,6 @@ class Helper:
             self.tb_writer.add_text('Model Params', table)
 
     def save_model(self, model=None, epoch=0, val_loss=0):
-
         if self.params.save_model:
             logger.info(f"Saving model to {self.params.folder_path}.")
             model_name = '{0}/model_last.pt.tar'.format(self.params.folder_path)
