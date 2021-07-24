@@ -3,12 +3,13 @@ import random
 from copy import deepcopy
 from typing import List, Any, Dict
 
+import torch.nn as nn
 from metrics.accuracy_metric import AccuracyMetric
 from metrics.test_loss_metric import TestLossMetric
 from tasks.fl.fl_user import FLUser
 import torch
 import logging
-from torch.nn import Module
+import copy
 
 from tasks.task import Task
 logger = logging.getLogger('logger')
@@ -20,6 +21,8 @@ class FederatedLearningTask(Task):
     adversaries: List[int] = None
 
     def init_task(self):
+        self.server = None
+        
         self.load_data()
         self.model = self.build_model()
         self.resume_model()
@@ -28,11 +31,16 @@ class FederatedLearningTask(Task):
         self.local_model = self.build_model().to(self.params.device)
         self.criterion = self.make_criterion()
         self.adversaries = self.sample_adversaries()
-        self.server = None
 
         self.metrics = [AccuracyMetric(), TestLossMetric(self.criterion)]
         self.set_input_shape()
         return
+
+    def add_defence(self, defence):
+        # self.model = self.server.set_defence(defence=defence)
+        # self.local_model = copy.deepcopy(self.model)
+        # self.criterion = nn.BCEWithLogitsLoss()
+        self.server.set_defence(defence=defence)
 
     def get_empty_accumulator(self):
         weight_accumulator = dict()
@@ -133,7 +141,7 @@ class FederatedLearningTask(Task):
             self.dp_clip(value, update_norm)
             weight_accumulator[name].add_(value)
 
-    def update_global_model(self, weight_accumulator, global_model: Module):
+    def update_global_model(self, weight_accumulator, global_model: nn.Module):
         for name, sum_update in weight_accumulator.items():
             if self.check_ignored_weights(name):
                 continue

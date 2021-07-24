@@ -1,5 +1,5 @@
 import argparse
-from defences.defences import PDGANServer
+from defences.defences import DefServer
 import shutil
 from datetime import datetime
 
@@ -14,8 +14,6 @@ from helper import Helper
 from utils.utils import *
 #import torchvision.utils as vutils
 #vutils.save_image(batch.inputs, '{}/real_samples_epoch_{:03d}.png'.format("./images", epoch), normalize=True)
-
-from defences.defences import PDGANServer
 
 logger = logging.getLogger('logger')
 
@@ -68,17 +66,19 @@ def run(hlpr):
 
 
 def fl_run(hlpr):
-    server = PDGANServer(hlpr=hlpr)
+    if hlpr.params.fl_pdgan > 0: # startup the server
+        hlpr.task.server = DefServer(hlpr=hlpr)
+        hlpr.task.add_defence("PDGAN")
     for epoch in range(hlpr.params.start_epoch,
                        hlpr.params.epochs + 1):
-        run_fl_round(hlpr, epoch, server)
+        run_fl_round(hlpr, epoch)
         metric = test(hlpr, epoch, backdoor=False)
         test(hlpr, epoch, backdoor=True)
 
         hlpr.save_model(hlpr.task.model, epoch, metric)
 
 
-def run_fl_round(hlpr, epoch, server):
+def run_fl_round(hlpr, epoch):
     global_model = hlpr.task.model
     local_model = hlpr.task.local_model
 
@@ -103,7 +103,7 @@ def run_fl_round(hlpr, epoch, server):
         #hlpr.task.accumulate_weights(weight_accumulator, local_update)	#local_update is appended to the weight_accumulator - ie. weight_accumulator is a dict of all local updates for EACH iteration.
     
     #input defences here to audit weight_accumulator; Server-based defences are more logical to be implemented here due to 1 user acting as up to 100 users.
-    benign_update_list = server.defend(hlpr, global_model, local_update_list, epoch)
+    benign_update_list = hlpr.task.server.defend(local_update_list, global_model, epoch)
 
     weight_accumulator = hlpr.task.get_empty_accumulator()	#initialise the accumulator
     for local_update in benign_update_list:

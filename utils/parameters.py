@@ -104,7 +104,7 @@ class Params:
     fl_no_models: int = 100                                         #number of participants to choose from number of total participants
     fl_local_epochs: int = 2                                        #number of epoch for LOCAL model.
     fl_total_participants: int = 80000
-    fl_eta: int = 1                                                 #global model learning rate
+    fl_eta: int = 1                                                 #global model learning rate = fl_total_participants/fl_no_models
     fl_sample_dirichlet: bool = False                               #dirichlet distribution (iid related concept)
     fl_dirichlet_alpha: float = None                                #parameter alpha of dirichlet distribution (iid related concept)
     fl_diff_privacy: bool = False                                   #differential privacy
@@ -117,7 +117,7 @@ class Params:
 
     # FL defence details: `pdgan`, `??`, ...
     fl_pdgan: int = 0                                               #0 to deactivate pdgan, otherwise d_iter = fl_pdgan where d_iter is the round to activate pdgan
-    fl_accuracy_threshold: int = 90
+    fl_accuracy_threshold: int = 10
 
     def __post_init__(self):
         # enable logging anyways when saving statistics

@@ -1,0 +1,123 @@
+task: CifarFed
+synthesizer: Pattern
+
+
+batch_size: 64
+test_batch_size: 100
+lr: 0.1
+momentum: 0.9
+decay: 0.0005
+epochs: 500
+save_on_epochs: []
+optimizer: SGD
+log_interval: 100
+
+pretrained: False
+
+scheduler: False
+
+poisoning_proportion: 0.5
+backdoor_label: 8
+
+#resume_model: model_CifarFed_Jan.11_03.42.53_cifarfed_dp0/model_last.pt.tar
+
+loss_balance: MGDA
+mgda_normalize: none
+
+save_model: True
+log: True
+tb: True
+report_train_loss: False
+
+transform_train: True
+
+fl: True
+fl_no_models: 10
+fl_local_epochs: 2
+fl_total_participants: 101 #reserve 1 for server
+fl_eta: 10    # n/m = 100/10 = 10
+fl_sample_dirichlet: True
+fl_dirichlet_alpha: 0.9
+fl_diff_privacy:  False
+fl_dp_clip: None
+fl_dp_noise: None
+
+fl_number_of_adversaries: 10
+fl_weight_scale: 100
+fl_pdgan: 400
+fl_accuracy_threshold: 12
+# fl_single_epoch_attack: 0
+
+
+loss_tasks:
+  - backdoor
+  - normal
+#  - nc_adv
+#  - ewc
+#  - latent
+#  - latent_fixed
+
+
+poison_images_test:
+  - 389
+  - 561
+  - 874
+  - 1605
+  - 3378
+  - 3678
+  - 4528
+  - 9744
+  - 19165
+  - 19500
+  - 21422
+  - 22984
+  - 32941
+  - 34287
+  - 34385
+  - 36005
+  - 37365
+  - 37533
+  - 38658
+  - 38735
+  - 39824
+  - 40138
+  - 41336
+  - 41861
+  - 47001
+  - 47026
+  - 48003
+  - 48030
+  - 49163
+  - 49588
+
+poison_images:
+  - 389
+  - 561
+  - 874
+  - 1605
+  - 3378
+  - 3678
+  - 4528
+  - 9744
+  - 19165
+  - 19500
+  - 21422
+  - 22984
+  - 32941
+  - 34287
+  - 34385
+  - 36005
+  - 37365
+  - 37533
+  - 38658
+  - 38735
+  - 39824
+  - 40138
+  - 41336
+  - 41861
+  - 47001
+  - 47026
+  - 48003
+  - 48030
+  - 49163
+  - 49588
