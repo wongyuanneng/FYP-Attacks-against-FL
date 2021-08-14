@@ -197,8 +197,7 @@ class PDGAN():
 				vutils.save_image(fake, '{}/fake_samples_epoch_{}.png'.format("./images", epoch), normalize=True)
 	
 	def run_defence(self, aux_loader, global_model, participant_updates, round_no):
-		# PDGAN deactivated
-		if self.hlpr.params.fl_pdgan == 0:
+		if self.hlpr.params.fl_pdgan == -1: # PDGAN deactivated
 			return participant_updates
 
 		# check if auxiliary data is loaded
@@ -260,6 +259,9 @@ class PDGAN():
 			if self.visualise:
 				self.output_vis(vis_list, round_no)
 				benign_update_list = participant_updates
+			elif self.hlpr.params.fl_pdgan == 0:
+				benign_update_list = participant_updates
+				logger.warning("no purges!")
 			else: #Purge only 
 				benign_update_list = self.purge(accuracy_list, participant_updates)
 

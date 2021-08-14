@@ -66,7 +66,7 @@ def run(hlpr):
 
 
 def fl_run(hlpr):
-    if hlpr.params.fl_pdgan > 0: # startup the server
+    if hlpr.params.fl_pdgan >= 0: # startup the server
         hlpr.task.server = DefServer(hlpr=hlpr)
         hlpr.task.add_defence("PDGAN")
     for epoch in range(hlpr.params.start_epoch,
