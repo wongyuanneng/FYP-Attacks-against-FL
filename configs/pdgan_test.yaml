@@ -45,7 +45,7 @@ fl_dp_noise: None
 fl_number_of_adversaries: 10
 fl_weight_scale: 1
 fl_pdgan: 60
-fl_accuracy_threshold: 0
+fl_accuracy_threshold: 18
 # fl_single_epoch_attack: 0
 
 

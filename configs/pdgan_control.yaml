@@ -7,7 +7,7 @@ test_batch_size: 100
 lr: 0.1
 momentum: 0.9
 decay: 0.0005
-epochs: 500
+epochs: 100
 save_on_epochs: []
 optimizer: SGD
 log_interval: 100
@@ -19,7 +19,7 @@ scheduler: False
 poisoning_proportion: 0.5
 backdoor_label: 8
 
-resume_model: model_CifarFed_Aug.26_01.54.29_pdgan_expt_threshold_test
+#resume_model: model_CifarFed_Aug.26_01.54.29_pdgan_expt_threshold_test
 
 loss_balance: MGDA
 mgda_normalize: none
