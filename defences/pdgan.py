@@ -5,6 +5,7 @@ import torchvision.utils as vutils
 
 import torch
 import torch.nn as nn
+from torchinfo import summary
 
 from models.gan import Generator, Discriminator
 
@@ -41,12 +42,6 @@ class PDGAN():
   
 		#self.visualise = visualise
 		self.visualise = False
-		if self.visualise:
-			try:
-				self.vis_dataset=pd.read_csv("./data_vis/data.csv")
-			except:
-				logger.warning(f"File not present; Creating new DF")
-				self.vis_dataset=pd.DataFrame()
 
 	def get_generator(self, nc, nz, ngf):
 		# Create the generator
@@ -60,7 +55,7 @@ class PDGAN():
 		self.netG.apply(self.weights_init)
 
 		# Print the model
-		#logger.warning(self.netG)
+		logger.warning(summary(self.netG, input_size=(64, 100, 1, 1)))
 
 		return self.netG
 
@@ -76,15 +71,16 @@ class PDGAN():
 		self.netD.apply(self.weights_init)
 
 		# Print the model
-		#logger.warning(self.netD)
+		logger.warning(summary(self.netD, input_size=(64, 3, 32, 32)))
 
 		return self.netD
 	
 	def save_model(self, model:nn.Module=None, name=""):
 		if self.hlpr.params.save_model:
 			logger.info(f"Saving model to {self.hlpr.params.folder_path}.")
-			model_name = '{}/model_{}weights.pth'.format(self.hlpr.params.folder_path, name)
-			torch.save(model.state_dict(), model_name)
+			model_name = '{}/model_{}weights'.format(self.hlpr.params.folder_path, name)
+			#torch.onnx.export(model=model, f=model_name+".onnx")
+			torch.save(model.state_dict(), model_name+".pth")
 
 	def resume_model(self, model:nn.Module=None, name=""):
 		if self.hlpr.params.resume_model:
@@ -180,10 +176,10 @@ class PDGAN():
 				self.optimizerG.step()
 
 				# Output training stats
-				if i % 50 == 0:
-					logger.warning('PDGAN Training. [%d/%d][%d/%d]\tLoss_D: %.4f\tLoss_G: %.4f\tD(x): %.4f\tD(G(z)): %.4f / %.4f'
-						% (epoch, num_epochs, i, len(self.aux_loader),
-							errD.item(), errG.item(), D_x, D_G_z1, D_G_z2))
+				#if i % 50 == 0:
+				#	logger.warning('PDGAN Training. [%d/%d][%d/%d]\tLoss_D: %.4f\tLoss_G: %.4f\tD(x): %.4f\tD(G(z)): %.4f / %.4f'
+				#		% (epoch, num_epochs, i, len(self.aux_loader),
+				#			errD.item(), errG.item(), D_x, D_G_z1, D_G_z2))
 
 				# Save Losses for plotting later
 				#self.G_losses.append(errG.item())
@@ -205,81 +201,81 @@ class PDGAN():
 			self.aux_loader = aux_loader
 
 		# Training Loop
-		self.train()    # by default train only once
+		self.train(num_epochs=2)    # by default train only once
 		self.save_model(model=self.netG, name="netG_")
 		self.save_model(model=self.netD, name="netD_")
 
 		#activate defence
-		if (round_no >= self.hlpr.params.fl_pdgan) or (self.visualise):
+		if (round_no >= self.hlpr.params.fl_pdgan):# or (self.visualise):
 			# Perform accuracy auditings
 			accuracy_list = []
 			vis_list=[]
+			pred_list=[]
+
+			#generate fake images
+			# Generate batch of latent vectors
+			noise = torch.randn(self.hlpr.params.batch_size, self.latent_size, 1, 1, device=device)
+			# Generate fake image batch with G
+			with torch.no_grad():
+				fake = self.netG(noise).detach()
+			#output a sample of fake
+			vutils.save_image(fake, '{}/fake_samples_epoch_{:03d}.png'.format("./images", round_no), normalize=True)
 
 			for k in range(len(participant_updates)):
-				acc_list_k = []
-				loss_list_k = []
-
-				#generate fake images
-				xfake = []
-				for i in range(10):
-					# Generate batch of latent vectors
-					noise = torch.randn(self.hlpr.params.batch_size, self.latent_size, 1, 1, device=device)
-					# Generate fake image batch with G
-					with torch.no_grad():
-						fake = self.netG(noise).detach()
-						xfake.append(fake)
-				
-				#output a sample of fake
-				vutils.save_image(fake, '{}/fake_samples_epoch_{:03d}_p{}.png'.format("./images", round_no, k), normalize=True)
-				
 				#initialise participant k's classification model
 				updated_global_model_k = copy.deepcopy(global_model)
 				weight_accumulator = self.hlpr.task.get_empty_accumulator()
 				self.hlpr.task.accumulate_weights(weight_accumulator, participant_updates[k]['update'])
 				self.hlpr.task.update_global_model(weight_accumulator, updated_global_model_k)
+
+				with torch.no_grad(): #Get labels for fake based on each participant model
+					#get predicted outputs
+					_, pred = updated_global_model_k(fake).topk(1, 1, True, True)
+					pred_list.append(pred)
+
+			labels = self.get_highest_freq(pred_list)
+
+			for k in range(len(pred_list)):
+				accuracy = self.calc_acc(preds=pred_list[k], labels=labels)
+				accuracy_list.append(accuracy)
+				logger.warning(f"PDGAN. Participant {k}. Compromised {participant_updates[k]['user'].compromised}. Epoch: {round_no}. Accuracy: {accuracy}")
+				vis_list.append({'participant':participant_updates[k]['user'], 'acc':accuracy})
 			
-				with torch.no_grad():
-					#Assign labels for x_fake based on L
-					for x_fake in xfake:
-						#get predicted outputs
-						pred = updated_global_model_k(x_fake)
-						_, labels = global_model(x_fake).topk(1, 1, True, True)
-						self.hlpr.task.accumulate_metrics(outputs=pred, labels=torch.squeeze(labels))
-						accuracy = self.hlpr.task.metrics[0].get_main_metric_value()
-						loss = self.hlpr.task.metrics[1].get_main_metric_value()
-						acc_list_k.append(accuracy)
-						loss_list_k.append(loss)
-				avg_acc = sum(acc_list_k)/len(acc_list_k)
-				avg_loss = sum(loss_list_k)/len(loss_list_k)
-				logger.warning(f"PDGAN. Participant {k}. Compromised {participant_updates[k]['user'].compromised}. Epoch: {round_no}. Accuracy: {avg_acc} | Loss: {avg_loss}")
-				accuracy_list.append(avg_acc)
-				vis_list.append({'participant':participant_updates[k]['user'], 'acc':avg_acc})
-			
-			#Visualise using graph; when visualising dont purge.
+			## For examining accuracy threshold value ##
 			if self.visualise:
-				self.output_vis(vis_list, round_no)
-				benign_update_list = participant_updates
-			elif self.hlpr.params.fl_pdgan == 0:
-				benign_update_list = participant_updates
+				self.output_vis(accuracy_list, participant_updates, round_no)
+			############################################
+
+			if self.hlpr.params.fl_pdgan == 0:
+				benign_update_list = self.purge(accuracy_list, participant_updates, round_no, self.hlpr.params.fl_accuracy_threshold)
 				logger.warning("no purges!")
+				benign_update_list = participant_updates
 			else: #Purge only 
-				benign_update_list = self.purge(accuracy_list, participant_updates)
+				benign_update_list = self.purge(accuracy_list, participant_updates, round_no, self.hlpr.params.fl_accuracy_threshold)
 
 			return benign_update_list
 		else:
 			return participant_updates
 
-	def purge(self, accuracy_list, participant_updates):
+	def get_highest_freq(self, pred_list):
+		stack = torch.stack(pred_list,2)
+		mode = torch.mode(stack).values
+		return mode
+
+	def calc_acc(self, preds, labels):
+		return preds.eq(labels).view(-1).float().sum(0).mul_(100.0 / self.hlpr.params.batch_size).item()
+
+	def purge(self, accuracy_list, participant_updates, epoch, threshold):
 		benign_update_list = []
 		malicious_update_list = []
 		mean_acc = sum(accuracy_list)/len(accuracy_list)
-		logger.warning(f"mean_acc: {mean_acc}")
-		acc_threshold = self.hlpr.params.fl_accuracy_threshold/100.0
+		acc_threshold = (1.0 - (threshold/100.0))*mean_acc
+
 		correct_purges = 0
 		num_adversaries_missed = 0
 		#Calculate accuracy a of each participant classification model on x_fake
 		for k in range(len(accuracy_list)):
-			if (accuracy_list[k] >= (1.0-acc_threshold)*mean_acc):
+			if (accuracy_list[k] >= acc_threshold):
 				benign_update_list.append(participant_updates[k])
 				if participant_updates[k]['user'].compromised:
 					num_adversaries_missed +=1
@@ -287,20 +283,10 @@ class PDGAN():
 				malicious_update_list.append(participant_updates[k])
 				if participant_updates[k]['user'].compromised:
 					correct_purges +=1
-		logger.warning(f"Correct participants purged: {correct_purges} | Total purged: {len(malicious_update_list)} | Adversaries missed: {num_adversaries_missed}.")
+		logger.warning(f"Epoch {epoch}. Threshold {threshold}. Correct participants purged: {correct_purges} | Total purged: {len(malicious_update_list)} | Adversaries missed: {num_adversaries_missed}.")
 		return benign_update_list
   
-	def output_vis(self, vis_list, round_no):
-		compromised_acc = []
-		uncompromised_acc = []
-		all_acc = []
-		for v in vis_list:
-			all_acc.append(v['acc'])
-			if v['participant'].compromised:
-				compromised_acc.append(v['acc'])
-			else:
-				uncompromised_acc.append(v['acc'])
-		self.vis_dataset = self.vis_dataset.append({"round_no":round_no, "all":all_acc, "compromised":compromised_acc, "uncompromised":uncompromised_acc}, ignore_index=True)
-		if (round_no>350):
-			self.vis_dataset.to_csv("./data_vis/data.csv", index=False)
-		return self.vis_dataset
+	def output_vis(self, accuracy_list, participant_updates, round_no):
+		for t in range(26):
+			self.purge(accuracy_list, participant_updates, round_no, t)
+		return

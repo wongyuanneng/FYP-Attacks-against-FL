@@ -113,7 +113,7 @@ class Params:
     # FL attack details. Set no adversaries to perform the attack:
     fl_number_of_adversaries: int = 0                               #set to 0 to disable attack
     fl_single_epoch_attack: int = None                              #specifies which epoch to perform the single-attack
-    fl_weight_scale: int = 1
+    fl_weight_scale: int = 1					    #scale (gamma) <= n/eta
 
     # FL defence details: `pdgan`, `??`, ...
     fl_pdgan: int = 0                                               #0 to deactivate pdgan, otherwise d_iter = fl_pdgan where d_iter is the round to activate pdgan

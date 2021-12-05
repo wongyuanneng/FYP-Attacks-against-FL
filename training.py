@@ -66,7 +66,7 @@ def run(hlpr):
 
 
 def fl_run(hlpr):
-    if hlpr.params.fl_pdgan >= 0: # startup the server
+    if hlpr.params.fl_pdgan >= -1: # startup the server: -1 to disable defence
         hlpr.task.server = DefServer(hlpr=hlpr)
         hlpr.task.add_defence("PDGAN")
     for epoch in range(hlpr.params.start_epoch,
@@ -96,6 +96,7 @@ def run_fl_round(hlpr, epoch):
                 train(hlpr, local_epoch, local_model, optimizer,
                       user.train_loader, attack=False)
         local_update = hlpr.task.get_fl_update(local_model, global_model)	#local_update for this user for this iteration is obtained.
+
         if user.compromised:
             hlpr.attack.fl_scale_update(local_update)		#backdoor scaling
         

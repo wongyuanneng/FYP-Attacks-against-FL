@@ -2,12 +2,12 @@ task: CifarFed
 synthesizer: Pattern
 
 
-batch_size: 100
+batch_size: 64
 test_batch_size: 100
 lr: 0.1
 momentum: 0.9
 decay: 0.0005
-epochs: 500
+epochs: 100
 save_on_epochs: []
 optimizer: SGD
 log_interval: 100
@@ -19,7 +19,7 @@ scheduler: False
 poisoning_proportion: 0.5
 backdoor_label: 8
 
-#resume_model: model_CifarFed_Jan.11_03.42.53_cifarfed_dp0/model_last.pt.tar
+# resume_model: model_CifarFed_Aug.25_09.48.04_pdgan_expt_control
 
 loss_balance: MGDA
 mgda_normalize: none
@@ -34,8 +34,8 @@ transform_train: True
 fl: True
 fl_no_models: 10
 fl_local_epochs: 2
-fl_total_participants: 101 #reserve 1 for server
-fl_eta: 10    # n/m = 100/10 = 10
+fl_total_participants: 100
+fl_eta: 10
 fl_sample_dirichlet: True
 fl_dirichlet_alpha: 0.9
 fl_diff_privacy:  False
@@ -44,8 +44,8 @@ fl_dp_noise: None
 
 fl_number_of_adversaries: 10
 fl_weight_scale: 1
-fl_pdgan: 400
-fl_accuracy_threshold: 15
+fl_pdgan: -1
+fl_accuracy_threshold: 0
 # fl_single_epoch_attack: 0
 
 
