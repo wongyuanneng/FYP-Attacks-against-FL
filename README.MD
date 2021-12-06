@@ -1,4 +1,7 @@
-# Backdoors 101
+# Study on attacks against Federated Learning
+
+Base code and README used is from Eugene Bagdasaryan's [Backdoors101](https://github.com/ebagdasa/backdoors101).
+Please remember to cite his work.
 
 <p align="center">
 <img src="./src/pixel_vs_semantic.png" alt="drawing" width="600"/>
