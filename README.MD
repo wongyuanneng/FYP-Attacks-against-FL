@@ -3,6 +3,8 @@
 Base code and README used is from Eugene Bagdasaryan's [Backdoors101](https://github.com/ebagdasa/backdoors101).
 Please remember to cite his work.
 
+# Backdoors 101
+
 <p align="center">
 <img src="./src/pixel_vs_semantic.png" alt="drawing" width="600"/>
 </p>
